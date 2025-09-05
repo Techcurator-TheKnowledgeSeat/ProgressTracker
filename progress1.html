@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RHCSA EX200 Objectives – Gamified Checklist</title>
+<style>
+  :root{
+    --bg: #0f1221;
+    --bg-soft: #171a2e;
+    --card: #1d2140;
+    --text: #e8ebff;
+    --muted: #a9b0d4;
+    --accent: #7c5cff;
+    --accent-2: #00d4ff;
+    --good: #25d366;
+    --warn: #ffd166;
+    --bad: #ef476f;
+    --ring: rgba(124,92,255,0.35);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    background: radial-gradient(1200px 800px at 80% -10%, #1a2044 0%, var(--bg) 55%), radial-gradient(900px 700px at -20% 110%, #142034 0%, var(--bg) 60%);
+    color: var(--text);
+  }
+  header{
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(6px);
+    background: linear-gradient(180deg, rgba(13,16,34,0.8), rgba(13,16,34,0.6));
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  h1{margin:10px 0 6px; font-size: clamp(20px, 3vw, 32px)}
+  .subtitle{margin:0 0 14px; color:var(--muted); font-size: 0.95rem}
+  .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  button,.chip{cursor:pointer; border:none; border-radius:12px; padding:10px 14px; font-weight:600; background:var(--card); color:var(--text); box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;}
+  button:hover{box-shadow:0 0 0 2px var(--ring) inset}
+  .chip{background:#19203a; font-size: 0.9rem}
+  .progress{
+    display:flex; align-items:center; gap:12px; margin:10px 0 14px;
+  }
+  .bar{flex:1; height:16px; background:#10142a; border-radius:999px; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset}
+  .bar > div{height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .35s ease}
+  .pct{min-width:80px; font-variant-numeric: tabular-nums; text-align:right}
+
+  .grid{display:grid; grid-template-columns: 1fr; gap:16px;}
+  @media (min-width: 900px){ .grid{grid-template-columns: 1fr 1fr} }
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:16px}
+  .card h2{margin:0 0 8px; font-size:1.1rem}
+  details > summary{cursor:pointer; list-style:none}
+  details > summary::-webkit-details-marker{display:none}
+  details > summary{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0;}
+  .count{color:var(--muted); font-size:0.9rem}
+
+  .obj{display:grid; grid-template-columns: 1fr auto; gap:8px; padding:10px 0; border-bottom:1px dashed rgba(255,255,255,0.06)}
+  .obj:last-child{border-bottom:none}
+  .radios{display:flex; gap:8px; align-items:center}
+  .radio{
+    --c: #3a3f64; --c-checked: var(--bad);
+    position:relative; display:inline-flex; align-items:center; gap:6px; padding:6px 8px; border-radius:999px; background: #121633; color: var(--muted);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset
+  }
+  .radio input{appearance:none; width:16px; height:16px; border-radius:50%; border:2px solid var(--c); display:inline-block; position:relative}
+  .radio input:checked{border-color:var(--c-checked)}
+  .radio input:checked::after{content:""; position:absolute; inset:3px; border-radius:50%; background:var(--c-checked)}
+  .radio[data-val="knowledgeable"]{--c-checked: var(--warn)}
+  .radio[data-val="confident"]{--c-checked: var(--good); color:#d2ffe1}
+  .obj.done .title{text-decoration: none}
+  .title{line-height:1.3}
+
+  .legend{display:flex; gap:8px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:0.9rem}
+  .legend .dot{width:10px;height:10px;border-radius:50%}
+  .legend .d1{background:var(--bad)}
+  .legend .d2{background:var(--warn)}
+  .legend .d3{background:var(--good)}
+
+  .footer{color:var(--muted); font-size:0.85rem; margin:18px 0}
+  .note{background:#111531; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.08)}
+  .search{flex:1; min-width:220px}
+  input[type="search"]{width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.14); background:#0f1431; color:var(--text)}
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>RHCSA EX200 Objectives – Gamified Tracker</h1>
+      <p class="subtitle">Based on the current public objectives (RHEL 10 era). Mark each item’s status. <strong>Only “Confident”</strong> moves the progress bar.</p>
+      <div class="toolbar">
+        <div class="progress" aria-live="polite">
+          <div class="bar" aria-label="Overall readiness"><div id="barFill"></div></div>
+          <div class="pct"><span id="pct">0</span>% ready</div>
+        </div>
+        <span class="chip" id="stats">0 / 0 confident</span>
+        <button id="showFocus">Focus Mode</button>
+        <button id="pickNext">Random Not‑Confident</button>
+        <button id="resetAll" title="Clear all choices">Reset</button>
+        <button id="exportBtn" title="Download your progress as JSON">Export</button>
+        <button id="importBtn" title="Load progress from a JSON file">Import</button>
+        <div class="search"><input id="searchBox" type="search" placeholder="Search objectives… (e.g., SELinux, Flatpak, nmcli)" /></div>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span class="dot d1"></span> Clueless
+        <span class="dot d2"></span> Knowledgeable
+        <span class="dot d3"></span> Confident
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="grid" class="grid"></div>
+
+    <div class="footer">
+      <p class="note">Configurations in the real exam must persist across reboot. This personal tracker is unofficial and for study planning only.</p>
+      <p>Pro‑tip: treat “Knowledgeable” as “can do with notes,” and “Confident” as “can do from muscle memory under time pressure.”</p>
+    </div>
+  </main>
+
+<script>
+/*************************************************
+ * RHCSA EX200 Objectives (paraphrased for brevity)
+ * Source mapped to categories from Red Hat’s public page.
+ * Last updated: 2025‑08‑25
+ *************************************************/
+const DATA = [
+  {
+    cat: "Understand & Use Essential Tools",
+    items: [
+      "Open a shell and run commands with correct syntax",
+      "Use I/O redirection (>, >>, |, 2>, etc.)",
+      "Search text with grep and regular expressions",
+      "Connect remotely via SSH",
+      "Log in and switch users in multi‑user targets",
+      "Archive and compress files with tar/gzip/bzip2",
+      "Create and edit text files (CLI editors)",
+      "Create, delete, copy, and move files and directories",
+      "Create hard links and symbolic links",
+      "List, set, and change ugo/rwx permissions",
+      "Find and read system docs (man, info, /usr/share/doc)"
+    ]
+  },
+  {
+    cat: "Manage Software (RPM & Flatpak)",
+    items: [
+      "Configure access to RPM repositories",
+      "Install and remove RPM packages",
+      "Configure access to Flatpak remotes",
+      "Install and remove Flatpak applications"
+    ]
+  },
+  {
+    cat: "Create Simple Shell Scripts",
+    items: [
+      "Use conditionals (if, test, [ ])",
+      "Loop over input (for, while)",
+      "Handle positional params ($1, $2, …)",
+      "Capture and process command output"
+    ]
+  },
+  {
+    cat: "Operate Running Systems",
+    items: [
+      "Boot, reboot, and shut down normally",
+      "Boot into different targets manually",
+      "Interrupt boot to gain system access",
+      "Identify high CPU/memory processes and terminate as needed",
+      "Adjust process scheduling (priorities)",
+      "Manage performance tuning profiles",
+      "Locate and interpret logs and the systemd journal",
+      "Persist/journal retention settings",
+      "Start, stop, and check status of network services",
+      "Transfer files securely between systems"
+    ]
+  },
+  {
+    cat: "Configure Local Storage",
+    items: [
+      "Create/delete partitions on MBR & GPT disks",
+      "Create and remove physical volumes (LVM)",
+      "Assign PVs to volume groups",
+      "Create and delete logical volumes",
+      "Configure fstab using UUID or label",
+      "Add partitions/LVs and swap without data loss"
+    ]
+  },
+  {
+    cat: "Create & Configure File Systems",
+    items: [
+      "Create, mount, unmount, and use VFAT, ext4, xfs",
+      "Mount and unmount NFS network file systems",
+      "Configure autofs for on‑demand mounts",
+      "Extend existing logical volumes (grow FS)",
+      "Diagnose and correct permission problems"
+    ]
+  },
+  {
+    cat: "Deploy, Configure & Maintain Systems",
+    items: [
+      "Schedule tasks with at and cron",
+      "Start/stop services and enable at boot",
+      "Set default boot target",
+      "Configure time sync clients",
+      "Install/update software from CDN, repo, or local media",
+      "Modify the bootloader configuration"
+    ]
+  },
+  {
+    cat: "Manage Basic Networking",
+    items: [
+      "Configure IPv4/IPv6 addresses",
+      "Configure hostname resolution",
+      "Enable network services at boot",
+      "Restrict access with firewalld / firewall‑cmd"
+    ]
+  },
+  {
+    cat: "Manage Users & Groups",
+    items: [
+      "Create, delete, modify local user accounts",
+      "Set passwords and manage password aging",
+      "Create, delete, modify groups and memberships",
+      "Configure superuser (sudo) access"
+    ]
+  },
+  {
+    cat: "Manage Security (SELinux & Firewall)",
+    items: [
+      "Configure firewall settings (firewall‑cmd / firewalld)",
+      "Manage default file permissions (umask)",
+      "Configure SSH key‑based authentication",
+      "Toggle SELinux enforcing/permissive",
+      "List and identify SELinux file/process contexts",
+      "Restore default SELinux file contexts",
+      "Manage SELinux port labels",
+      "Use SELinux booleans to alter policy behavior"
+    ]
+  }
+];
+
+// ----- App State -----
+const KEY = 'rhcsa_ex200_tracker_v1';
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return {};
+    return JSON.parse(raw);
+  }catch(e){
+    return {};
+  }
+}
+function saveState(){
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
+
+function slugify(s){
+  return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+
+function render(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  const q = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+
+  DATA.forEach(section => {
+    const card = document.createElement('section');
+    card.className = 'card';
+
+    const id = slugify(section.cat);
+    const total = section.items.length;
+    const done = section.items.filter((t,i)=> (state[id+':'+i]||'') === 'confident').length;
+
+    const det = document.createElement('details');
+    det.open = true;
+
+    const sum = document.createElement('summary');
+    const h2 = document.createElement('h2');
+    h2.textContent = section.cat;
+    const count = document.createElement('span');
+    count.className = 'count';
+    count.textContent = `${done} / ${total} confident`;
+    sum.appendChild(h2); sum.appendChild(count);
+    det.appendChild(sum);
+
+    section.items.forEach((title, idx) => {
+      if(q && !title.toLowerCase().includes(q) && !section.cat.toLowerCase().includes(q)) return;
+      const row = document.createElement('div');
+      row.className = 'obj';
+      const key = id+':'+idx;
+
+      const left = document.createElement('div');
+      const span = document.createElement('div');
+      span.className = 'title';
+      span.textContent = title;
+      left.appendChild(span);
+
+      const right = document.createElement('div');
+      right.className = 'radios';
+
+      ['clueless','knowledgeable','confident'].forEach(val => {
+        const label = document.createElement('label');
+        label.className = 'radio';
+        label.dataset.val = val;
+
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = key; input.value = val;
+        input.checked = (state[key]||'') === val;
+        input.addEventListener('change', () => {
+          state[key] = val;
+          saveState();
+          updateGlobal();
+        });
+
+        const txt = document.createElement('span');
+        txt.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+
+        label.appendChild(input); label.appendChild(txt);
+        right.appendChild(label);
+      });
+
+      row.appendChild(left); row.appendChild(right);
+      if((state[key]||'') === 'confident') row.classList.add('done');
+      det.appendChild(row);
+    });
+
+    card.appendChild(det);
+    grid.appendChild(card);
+  });
+
+  updateGlobal();
+}
+
+function updateGlobal(){
+  const allKeys = [];
+  DATA.forEach(section => section.items.forEach((_,i)=> allKeys.push(slugify(section.cat)+':'+i)));
+  const total = allKeys.length;
+  const confident = allKeys.filter(k => state[k]==='confident').length;
+  const pct = total ? Math.round((confident/total)*100) : 0;
+  document.getElementById('pct').textContent = pct;
+  document.getElementById('barFill').style.width = pct + '%';
+  document.getElementById('stats').textContent = `${confident} / ${total} confident`;
+
+  // Update section counters
+  document.querySelectorAll('.card').forEach((card, sIdx) => {
+    const section = DATA[sIdx];
+    const id = slugify(section.cat);
+    const total = section.items.length;
+    const done = section.items.filter((t,i)=> (state[id+':'+i]||'') === 'confident').length;
+    const span = card.querySelector('.count');
+    if(span) span.textContent = `${done} / ${total} confident`;
+  });
+}
+
+// Focus mode: hide objectives that are already confident
+let focus = false;
+function toggleFocus(){
+  focus = !focus;
+  document.getElementById('showFocus').textContent = focus ? 'Show All' : 'Focus Mode';
+  document.querySelectorAll('.obj').forEach(row => {
+    const name = row.querySelector('input[type=radio]')?.name;
+    const val = state[name];
+    row.style.display = (focus && val === 'confident') ? 'none' : '';
+  });
+}
+
+function pickRandom(){
+  const pool = [];
+  DATA.forEach(section => section.items.forEach((t,i)=>{
+    const key = slugify(section.cat)+':'+i;
+    if(state[key]!== 'confident') pool.push({section: section.cat, title: t, key});
+  }));
+  if(pool.length===0){
+    alert('Everything is marked Confident. You are 100% ready!');
+    return;
+  }
+  const choice = pool[Math.floor(Math.random()*pool.length)];
+  alert(`Next up:\n${choice.section} → ${choice.title}`);
+}
+
+function resetAll(){
+  if(!confirm('Reset all selections?')) return;
+  state = {}; saveState(); render();
+}
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'rhcsa-ex200-progress.json';
+  a.click();
+}
+
+function importJSON(){
+  const i = document.createElement('input'); i.type = 'file'; i.accept = 'application/json';
+  i.addEventListener('change', () => {
+    const f = i.files[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const obj = JSON.parse(reader.result);
+        if(obj && typeof obj === 'object'){
+          state = obj; saveState(); render();
+        }else throw new Error('Invalid JSON');
+      }catch(e){ alert('Could not import: ' + e.message); }
+    };
+    reader.readAsText(f);
+  });
+  i.click();
+}
+
+// Events
+window.addEventListener('DOMContentLoaded', ()=>{
+  render();
+  document.getElementById('showFocus').addEventListener('click', toggleFocus);
+  document.getElementById('pickNext').addEventListener('click', pickRandom);
+  document.getElementById('resetAll').addEventListener('click', resetAll);
+  document.getElementById('exportBtn').addEventListener('click', exportJSON);
+  document.getElementById('importBtn').addEventListener('click', importJSON);
+  document.getElementById('searchBox').addEventListener('input', render);
+});
+</script>
+</body>
+</html>
+
