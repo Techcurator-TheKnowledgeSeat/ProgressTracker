@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RHCSA EX200 Objectives — Gamified Checklist (Spooky Edition)</title>
+<style>
+  :root{
+    --bg:#0b0b12;             /* deep space */
+    --panel:#121226;          /* card */
+    --panel-2:#11111d;
+    --text:#ffffff;           /* main accent white */
+    --muted:#bfbfd9;
+    --purple:#8b5cf6;         /* halloween purple */
+    --orange:#fb923c;         /* halloween orange */
+    --green:#34d399;          /* halloween green */
+    --danger:#ff3b6b;
+    --ok:#10b981;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;}
+  body{overflow:hidden}
+
+  /* Background candy: layered gradients + stars + floating shapes */
+  .bg{
+    position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(1200px 600px at -10% -10%, rgba(139,92,246,.15), transparent 60%),
+      radial-gradient(900px 500px at 110% 20%, rgba(251,146,60,.12), transparent 60%),
+      radial-gradient(800px 500px at 50% 120%, rgba(52,211,153,.12), transparent 60%),
+      linear-gradient(180deg, #0b0b12 0%, #0a0a13 100%);
+    filter: saturate(1.1);
+  }
+  /* Subtle grid */
+  .grid{position:fixed;inset:0;z-index:-1;opacity:.08;background:
+    linear-gradient(transparent 97%, rgba(255,255,255,.6) 98%, transparent 99%),
+    linear-gradient(90deg, transparent 97%, rgba(255,255,255,.6) 98%, transparent 99%);
+    background-size: 28px 28px, 28px 28px;
+  }
+  /* Floating bats (pure CSS triangles) */
+  .bat{position:fixed;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:14px solid var(--purple);opacity:.35;filter:drop-shadow(0 0 6px rgba(139,92,246,.5));}
+  .bat:nth-child(1){top:8%;left:12%;animation:flap 10s linear infinite;}
+  .bat:nth-child(2){top:18%;left:78%;animation:flap 14s linear infinite reverse;}
+  .bat:nth-child(3){top:70%;left:6%;animation:flap 18s linear infinite;}
+  .bat:nth-child(4){top:88%;left:86%;animation:flap 22s linear infinite reverse;}
+  @keyframes flap{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-12px) rotate(6deg)}100%{transform:translateY(0) rotate(0)}}
+
+  /* Layout */
+  .app{display:grid;grid-template-columns: 360px 1fr;gap:18px;position:fixed;inset:18px;}
+  @media (max-width: 1200px){.app{grid-template-columns: 320px 1fr}}
+  @media (max-width: 980px){.app{grid-template-columns: 1fr; grid-template-rows:auto 1fr;}}
+
+  .sidebar{background:linear-gradient(180deg, rgba(18,18,38,.9), rgba(18,18,38,.75));border:1px solid rgba(255,255,255,.06);border-radius:18px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:16px;backdrop-filter: blur(6px);}
+  .main{background:linear-gradient(180deg, rgba(17,17,29,.9), rgba(17,17,29,.78));border:1px solid rgba(255,255,255,.06);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+
+  header{display:flex;align-items:center;gap:14px;}
+  .logo{width:40px;height:40px;border-radius:10px;background:conic-gradient(from 0deg, var(--purple), var(--orange), var(--green), var(--purple));filter:blur(.2px) contrast(1.2);}
+  h1{font-size:1.12rem;margin:0;letter-spacing:.2px}
+  .tag{padding:3px 8px;border-radius:999px;background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.35);color:#ffd2ad;font-size:.72rem;font-weight:600}
+
+  .progress-wrap{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}
+  .progress-bar{height:14px;background:linear-gradient(90deg, var(--green), var(--orange));border-radius:999px;box-shadow:inset 0 0 8px rgba(0,0,0,.45), 0 4px 12px rgba(16,185,129,.25);position:relative;}
+  .progress-bar > .fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg, var(--purple), var(--green), var(--orange));box-shadow: 0 0 20px rgba(139,92,246,.35);transition:width .35s cubic-bezier(.22,1,.36,1)}
+  .progress-stats{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-top:8px}
+
+  .ring{position:relative;width:100%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 50% 50%, rgba(139,92,246,.25), transparent 60%)}
+  .ring svg{position:absolute;inset:0}
+  .ring .pct{font-weight:800;font-size:2.1rem;text-shadow:0 2px 18px rgba(139,92,246,.45)}
+
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));color:#fff;cursor:pointer;font-weight:700;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.08)}
+  .btn:hover{filter:brightness(1.05)}
+  .btn.warn{background:linear-gradient(180deg, rgba(255,59,107,.18), rgba(255,59,107,.06));border-color:rgba(255,59,107,.35)}
+  .btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,.2)}
+
+  .filter{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;border-radius:999px;padding:6px 10px;font-size:.83rem;cursor:pointer}
+  .chip.active{border-color:var(--purple);box-shadow:0 0 0 2px rgba(139,92,246,.25);}
+
+  .scroll{overflow:auto;padding:18px}
+  .category{margin:0 0 18px 0;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+  .cat-head{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));border-bottom:1px solid rgba(255,255,255,.06);border-top-left-radius:14px;border-top-right-radius:14px}
+  .cat-title{font-weight:800;letter-spacing:.2px}
+  .cat-meta{font-size:.8rem;color:var(--muted)}
+  .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:14px}
+  .item{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .item h4{margin:0;font-size:.98rem}
+  .radios{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);font-size:.82rem;cursor:pointer}
+  .pill input{accent-color:var(--orange);}
+  .pill.confident{border-color:rgba(52,211,153,.45);}
+  .pill.knowledge{border-color:rgba(251,146,60,.45);}
+  .pill.clueless{border-color:rgba(255,255,255,.18);}
+
+  .achievements{display:grid;gap:10px}
+  .achievement{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg, rgba(52,211,153,.14), rgba(52,211,153,.04));font-size:.9rem}
+  .achievement .name{font-weight:800}
+
+  .footer{font-size:.78rem;color:var(--muted)}
+  .footer a{color:#fff;text-decoration-color:var(--purple)}
+
+  /* Aspect-ratio conscious tweaks */
+  @media (min-aspect-ratio:16/9){
+    .sidebar .ring{max-width:260px;margin:8px auto 0 auto}
+  }
+  @media (max-aspect-ratio:9/16){
+    body{overflow:auto}
+    .app{position:static;inset:auto;padding:12px}
+    .sidebar{position:sticky;top:12px;z-index:3}
+  }
+
+  /* Confetti blast at 100% */
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:5}
+  .confetti span{position:absolute;width:10px;height:10px;background:var(--orange);animation:fall 3s linear forwards;opacity:.95;border-radius:2px}
+  .confetti span:nth-child(3n){background:var(--purple)}
+  .confetti span:nth-child(5n){background:var(--green)}
+  @keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.1}}
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="bat"></div><div class="bat"></div><div class="bat"></div><div class="bat"></div>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <header>
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>RHCSA EX200 Objectives</h1>
+          <div class="tag">Knowledge Seat Study Tracker. 👽 🛸</div>
+        </div>
+      </header>
+
+      <div class="progress-wrap">
+        <div class="progress-bar" aria-label="Overall completion" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="fill" id="barFill"></div>
+        </div>
+        <div class="progress-stats">
+          <div><strong id="pctText">0%</strong> confident</div>
+          <div><span id="confidentCount">0</span>/<span id="totalCount">0</span> objectives</div>
+        </div>
+      </div>
+
+      <div class="ring" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--purple)"/>
+              <stop offset="50%" stop-color="var(--green)"/>
+              <stop offset="100%" stop-color="var(--orange)"/>
+            </linearGradient>
+          </defs>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/>
+          <circle id="ringStroke" cx="60" cy="60" r="52" fill="none" stroke="url(#g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="326" stroke-dashoffset="326"/>
+        </svg>
+        <div class="pct" id="ringPct">0%</div>
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="showRemaining">Show Remaining</button>
+        <button class="btn ghost" id="showAll">Show All</button>
+        <button class="btn" id="exportBtn">Export</button>
+        <button class="btn" id="importBtn">Import</button>
+        <button class="btn warn" id="resetBtn">Reset</button>
+      </div>
+
+      <div class="achievements" id="achievements" aria-live="polite"></div>
+
+      <div class="footer">
+        <p>Only <em>Confident</em> selections count toward completion. Your progress is saved in this browser.</p>
+        <p>Objectives summarized from Red Hat’s official EX200 page. For the latest details, see the RHCSA EX200 objectives on Red Hat’s site.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="scroll">
+        <div class="filter" style="margin-bottom:12px">
+          <input id="search" type="search" placeholder="Filter objectives (e.g., SELinux, Flatpak, cron)" style="width:100%;padding:10px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff"/>
+        </div>
+        <div id="categories"></div>
+      </div>
+    </main>
+  </div>
+
+<script>
+// ===== Objective Data (paraphrased, condensed labels) =====
+const DATA = [
+  { cat: "Understand & Use Essential Tools", items: [
+    "Access shell; correct command syntax",
+    "I/O redirection: > >> | 2> etc.",
+    "Text search with grep + regex",
+    "Connect via SSH to remote systems",
+    "Login/switch users in multiuser targets",
+    "Archive/compress with tar, gzip, bzip2",
+    "Edit text files (e.g., vi/nano)",
+    "Create/delete/copy/move files & dirs",
+    "Create hard and soft links",
+    "List/set/change ugo/rwx permissions",
+    "Use system docs: man, info, /usr/share/doc"
+  ]},
+  { cat: "Manage Software", items: [
+    "Configure access to RPM repositories",
+    "Install & remove RPM packages",
+    "Configure Flatpak repositories",
+    "Install & remove Flatpak apps"
+  ]},
+  { cat: "Create Simple Shell Scripts", items: [
+    "Conditionals: if, test, []",
+    "Loops: for, while; process input",
+    "Use positional params: $1, $2, ...",
+    "Capture command output in scripts"
+  ]},
+  { cat: "Operate Running Systems", items: [
+    "Boot/reboot/shutdown normally",
+    "Change system targets manually",
+    "Interrupt boot for rescue access",
+    "Identify CPU/memory heavy procs; kill",
+    "Adjust process scheduling (nice/renice)",
+    "Manage tuning profiles",
+    "View logs & journals; preserve journals",
+    "Start/stop/status of network services",
+    "Securely transfer files (scp/rsync)"
+  ]},
+  { cat: "Configure Local Storage", items: [
+    "Partition disks (MBR/GPT)",
+    "Create/remove physical volumes (PV)",
+    "Assign PVs to volume groups (VG)",
+    "Create/delete logical volumes (LV)",
+    "Mount at boot via fstab by UUID/label",
+    "Add partitions/LVs & swap non-destructively"
+  ]},
+  { cat: "Create & Configure File Systems", items: [
+    "Create/mount/use vfat, ext4, xfs",
+    "Mount/unmount NFS shares",
+    "Configure autofs",
+    "Extend existing logical volumes",
+    "Diagnose & fix permission problems"
+  ]},
+  { cat: "Deploy, Configure & Maintain", items: [
+    "Schedule tasks: at & cron",
+    "Enable/disable services at boot",
+    "Set default boot target",
+    "Configure time service clients (chrony)",
+    "Install/update from CDN, repo, or local",
+    "Modify system bootloader (GRUB)"
+  ]},
+  { cat: "Manage Basic Networking", items: [
+    "Configure IPv4 and IPv6 addresses",
+    "Configure hostname resolution",
+    "Ensure network services start at boot",
+    "Restrict access with firewalld/firewall-cmd"
+  ]},
+  { cat: "Manage Users & Groups", items: [
+    "Create/modify/delete local users",
+    "Change passwords & set aging",
+    "Create/modify/delete groups & memberships",
+    "Configure superuser (sudo) access"
+  ]},
+  { cat: "Manage Security (incl. SELinux)", items: [
+    "Firewall settings using firewalld/cmd",
+    "Default file perms (umask) management",
+    "SSH key-based authentication",
+    "SELinux enforcing vs permissive",
+    "List/identify SELinux contexts",
+    "Restore default file contexts (restorecon)",
+    "Manage SELinux port labels",
+    "Set SELinux booleans"
+  ]},
+];
+
+// ===== State & Persistence =====
+const STORAGE_KEY = "rhcsa_spooky_tracker_v1";
+let state = loadState();
+
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }catch{ return {}; }
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+// ===== Render =====
+const catsEl = document.getElementById('categories');
+const totalCountEl = document.getElementById('totalCount');
+const confidentCountEl = document.getElementById('confidentCount');
+const barFill = document.getElementById('barFill');
+const pctText = document.getElementById('pctText');
+const ringPct = document.getElementById('ringPct');
+const ringStroke = document.getElementById('ringStroke');
+
+let ALL_IDS = [];
+
+function slugify(s){
+  return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+
+function render(){
+  catsEl.innerHTML = '';
+  ALL_IDS = [];
+  DATA.forEach((block, ci) => {
+    const catId = slugify(block.cat);
+    const cat = document.createElement('section');
+    cat.className = 'category';
+
+    // Header with cat progress
+    const head = document.createElement('div');
+    head.className = 'cat-head';
+    const title = document.createElement('div');
+    title.className = 'cat-title';
+    title.textContent = block.cat;
+    const meta = document.createElement('div');
+    meta.className = 'cat-meta';
+    meta.id = `meta-${catId}`;
+    head.appendChild(title); head.appendChild(meta);
+
+    // Items grid
+    const items = document.createElement('div');
+    items.className = 'items';
+
+    block.items.forEach((txt, i) => {
+      const id = `${catId}__${i}`;
+      ALL_IDS.push(id);
+      const level = state[id] || 'clueless';
+
+      const card = document.createElement('div');
+      card.className = 'item';
+
+      const h4 = document.createElement('h4');
+      h4.textContent = txt;
+      card.appendChild(h4);
+
+      const radios = document.createElement('div');
+      radios.className = 'radios';
+
+      const mk = (val,label,cls) => {
+        const wrap = document.createElement('label');
+        wrap.className = `pill ${cls}`;
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = id; input.value = val;
+        if(level===val) input.checked = true;
+        input.addEventListener('change', () => {
+          state[id] = val; saveState(); update();
+        });
+        const span = document.createElement('span'); span.textContent = label;
+        wrap.appendChild(input); wrap.appendChild(span);
+        return wrap;
+      };
+
+      radios.appendChild(mk('clueless','Clueless','clueless'));
+      radios.appendChild(mk('knowledge','Knowledgeable','knowledge'));
+      radios.appendChild(mk('confident','Confident','confident'));
+      card.appendChild(radios);
+      items.appendChild(card);
+    });
+
+    cat.appendChild(head);
+    cat.appendChild(items);
+    catsEl.appendChild(cat);
+  });
+
+  totalCountEl.textContent = ALL_IDS.length;
+  update();
+}
+
+function update(){
+  // Search filter
+  const q = (document.getElementById('search').value || '').toLowerCase();
+  document.querySelectorAll('.item').forEach(el => {
+    const text = el.querySelector('h4').textContent.toLowerCase();
+    el.style.display = text.includes(q) ? '' : 'none';
+  });
+
+  // Compute progress (only confident)
+  let confident = 0;
+  ALL_IDS.forEach(id => { if(state[id]==='confident') confident++; });
+  const total = ALL_IDS.length || 1;
+  const pct = Math.round((confident/total)*100);
+  confidentCountEl.textContent = confident;
+  barFill.style.width = pct + '%';
+  pctText.textContent = pct + '%';
+  ringPct.textContent = pct + '%';
+  const circumference = 2*Math.PI*52; // r=52
+  ringStroke.style.strokeDashoffset = circumference * (1 - pct/100);
+  document.querySelector('.progress-bar').setAttribute('aria-valuenow', pct);
+
+  // Category summaries
+  DATA.forEach(block => {
+    const catId = slugify(block.cat);
+    const totalInCat = block.items.length;
+    let confInCat = 0;
+    block.items.forEach((txt,i)=>{ if(state[`${catId}__${i}`]==='confident') confInCat++; });
+    const meta = document.getElementById(`meta-${catId}`);
+    const p = Math.round((confInCat/totalInCat)*100);
+    meta.textContent = `${confInCat}/${totalInCat} confident (${p}%)`;
+  });
+
+  // Achievements
+  updateAchievements(pct);
+}
+
+// Achievements thresholds
+const ACH = [
+  {t:25, name:'Apprentice Alchemist', desc:'Quarter way there. Your shell is stirring.'},
+  {t:50, name:'Daemon Wrangler', desc:'Halfway! Services obey your incantations.'},
+  {t:75, name:'SELinux Whisperer', desc:'Three-quarters. Contexts fear your gaze.'},
+  {t:100, name:'RHCSA Necromancer', desc:'Perfection achieved. Summon the exam.'},
+];
+function updateAchievements(pct){
+  const el = document.getElementById('achievements');
+  el.innerHTML = '';
+  ACH.filter(a=>pct>=a.t).forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'achievement';
+    card.innerHTML = `<div class="name">${a.name}</div><div>${a.desc}</div>`;
+    el.appendChild(card);
+  });
+  if(pct===100) blastConfetti();
+}
+
+// Confetti
+function blastConfetti(){
+  const area = document.getElementById('confetti');
+  if(area.childElementCount>0) return; // once per run
+  const N = 160;
+  for(let i=0;i<N;i++){
+    const s = document.createElement('span');
+    s.style.left = (Math.random()*100)+'vw';
+    s.style.top = (-10 - Math.random()*20)+'vh';
+    s.style.transform = `translateY(0) rotate(${Math.random()*180}deg)`;
+    s.style.animationDelay = (Math.random()*1.5)+'s';
+    area.appendChild(s);
+  }
+  setTimeout(()=> area.innerHTML='', 4000);
+}
+
+// Controls
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if(confirm('Reset all selections?')){ state = {}; saveState(); render(); }
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), {href:url, download:'rhcsa-progress.json'});
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', async () => {
+  const input = Object.assign(document.createElement('input'), {type:'file', accept:'application/json'});
+  input.onchange = () => {
+    const file = input.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { try{ state = JSON.parse(reader.result); saveState(); render(); }catch(e){ alert('Invalid JSON'); } };
+    reader.readAsText(file);
+  };
+  input.click();
+});
+
+document.getElementById('showRemaining').addEventListener('click', () => {
+  document.querySelectorAll('.item').forEach(el => {
+    const id = el.querySelector('input')?.name; // all radios share name per card
+    const val = state[id] || 'clueless';
+    el.style.display = (val==='confident') ? 'none' : '';
+  });
+});
+
+document.getElementById('showAll').addEventListener('click', () => {
+  document.querySelectorAll('.item').forEach(el => el.style.display='');
+});
+
+document.getElementById('search').addEventListener('input', update);
+
+// Init
+render();
+</script>
+</body>
+</html>
+
